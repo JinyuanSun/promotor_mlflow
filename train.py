@@ -32,7 +32,7 @@ import mlflow
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
-run = mlflow.start_run()
+# run = mlflow.start_run()
 out_dir = 'out'
 eval_interval = 2000
 log_interval = 1
@@ -79,12 +79,12 @@ exec(open('configurator.py').read()) # overrides from command line or config fil
 config = {k: globals()[k] for k in config_keys} # will be useful for logging
 # -----------------------------------------------------------------------------
 print('training config:')
-for k,v in config.items():
+# for k,v in config.items():
     # print(f'  {k}: {v}')
     # out_dir : {type: str, default: 'out-tss50'}
     # print(f"{k} : {{type : {str(type(v).__name__)}, default: {v}}} ")
 # exit()
-    mlflow.log_param(k, v)
+    # mlflow.log_param(k, v)
 
 # exit(0)
 # various inits, derived attributes, I/O setup
@@ -333,7 +333,7 @@ while True:
             mfu = raw_model.estimate_mfu(batch_size * gradient_accumulation_steps, dt)
             running_mfu = mfu if running_mfu == -1.0 else 0.9*running_mfu + 0.1*mfu
         print(f"iter {iter_num}: loss {lossf:.4f}, time {dt*1000:.2f}ms, mfu {running_mfu*100:.2f}%")
-        mlflow.log_metric(key="loss", value=f"{lossf:.4f}", step=iter_num)
+        # mlflow.log_metric(key="loss", value=f"{lossf:.4f}", step=iter_num)
     iter_num += 1
     local_iter_num += 1
 
@@ -344,4 +344,4 @@ while True:
 if ddp:
     destroy_process_group()
 
-mlflow.end_run()
+# mlflow.end_run()
