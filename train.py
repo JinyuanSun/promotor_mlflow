@@ -29,9 +29,11 @@ from torch.distributed import init_process_group, destroy_process_group
 
 from model import GPTConfig, GPT
 import mlflow
+
 # -----------------------------------------------------------------------------
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
+
 run = mlflow.start_run()
 out_dir = 'out'
 eval_interval = 2000
@@ -289,9 +291,10 @@ while True:
                 }
                 print(f"saving checkpoint to {out_dir}")
                 mlflow.log_metric(key="loss", value=f"{lossf:.4f}")
-                mlflow.pytorch.log_model(raw_model, "model")
-                mlflow.log_dict(checkpoint, f"checkpoint_{iter_num}")
-                torch.save(checkpoint, os.path.join(out_dir, f'ckpt_iter_{iter_num}.pt'))
+                # mlflow.pytorch.log_model(raw_model, "model")
+                # mlflow.log_dict(checkpoint, f"checkpoint_{iter_num}")
+                # torch.save(checkpoint, os.path.join(out_dir, f'ckpt_iter_{iter_num}.pt'))
+                torch.save(checkpoint, os.path.join(out_dir, 'ckpt.pt'))
     if iter_num == 0 and eval_only:
         break
 
@@ -344,4 +347,54 @@ while True:
 if ddp:
     destroy_process_group()
 
-mlflow.end_run()
+# -------------------
+
+
+with open(meta_path, 'rb') as f:
+    meta = pickle.load(f)
+    # TODO want to make this more general to arbitrary encoder/decoder schemes
+    stoi, itos = meta['stoi'], meta['itos']
+    encode = lambda s: [stoi[c] for c in s]
+    decode = lambda l: ''.join([itos[i] for i in l])
+
+class PromoterGPT(mlflow.pyfunc.PythonModel):
+    def __init__(self, context):
+        # self.predictor = predictor
+        device = "cuda:0"
+        ckpt_path = context.artifacts["gpt_model"]
+        checkpoint = torch.load(ckpt_path, map_location=device)
+        gptconf = GPTConfig(**checkpoint['model_args'])
+        self.model = GPT(gptconf)
+        state_dict = checkpoint['model']
+        unwanted_prefix = '_orig_mod.'
+        for k,v in list(state_dict.items()):
+            if k.startswith(unwanted_prefix):
+                state_dict[k[len(unwanted_prefix):]] = state_dict.pop(k)
+        self.model.load_state_dict(state_dict)
+        self.model.to(device).eval()
+
+        with open(context.artifacts["meta"], 'rb') as f:
+            meta = pickle.load(f)
+            # TODO want to make this more general to arbitrary encoder/decoder schemes
+            _, itos = meta['stoi'], meta['itos']
+            # encode = lambda s: [stoi[c] for c in s]
+            self.decode = lambda l: ''.join([itos[i] for i in l])
+
+    def predict(self, context, model_input):
+        y = self.model.generate(model_input, 50, temperature=0.8, top_k=4)
+        return self.decode(y[0].tolist())
+    
+
+artifacts = {"gpt_model": os.path.join(out_dir, 'ckpt.pt'),
+             "meta": meta_path}
+
+mlflow_pyfunc_model_path = "model"
+mlflow.pyfunc.save_model(
+    path=mlflow_pyfunc_model_path,
+    python_model=PromoterGPT(),
+    artifacts=artifacts
+)
+
+loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
+test_predictions = loaded_model.predict("\n")
+print(test_predictions)
