@@ -1,0 +1,15 @@
+artifact_uri: file:///user/sunjinyuan/promotor_mlflow/mlruns/0/886f3a9bf2dd45679c7a04f693fbe46e/artifacts
+end_time: 1695591912195
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 886f3a9bf2dd45679c7a04f693fbe46e
+run_name: capricious-cod-194
+run_uuid: 886f3a9bf2dd45679c7a04f693fbe46e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1695591899425
+status: 4
+tags: []
+user_id: sunjinyuan

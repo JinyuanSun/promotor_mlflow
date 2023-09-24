@@ -1,0 +1,15 @@
+artifact_uri: file:///user/sunjinyuan/promotor_mlflow/mlruns/0/286aad90d9894e769f3f48d13f0ceb8f/artifacts
+end_time: 1695592489326
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 286aad90d9894e769f3f48d13f0ceb8f
+run_name: zealous-pug-746
+run_uuid: 286aad90d9894e769f3f48d13f0ceb8f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1695592475231
+status: 4
+tags: []
+user_id: sunjinyuan

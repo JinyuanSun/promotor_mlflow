@@ -1,0 +1,15 @@
+artifact_uri: file:///user/sunjinyuan/promotor_mlflow/mlruns/0/21071295100246ebbb50875f3fd8fb1e/artifacts
+end_time: 1695592348182
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: 21071295100246ebbb50875f3fd8fb1e
+run_name: glamorous-hare-944
+run_uuid: 21071295100246ebbb50875f3fd8fb1e
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1695592272731
+status: 4
+tags: []
+user_id: sunjinyuan

@@ -34,7 +34,7 @@ import mlflow
 # default config values designed to train a gpt2 (124M) on OpenWebText
 # I/O
 
-run = mlflow.start_run()
+
 out_dir = 'out'
 eval_interval = 2000
 log_interval = 1
@@ -81,12 +81,16 @@ exec(open('configurator.py').read()) # overrides from command line or config fil
 config = {k: globals()[k] for k in config_keys} # will be useful for logging
 # -----------------------------------------------------------------------------
 print('training config:')
-for k,v in config.items():
-    # print(f'  {k}: {v}')
-    # out_dir : {type: str, default: 'out-tss50'}
-    # print(f"{k} : {{type : {str(type(v).__name__)}, default: {v}}} ")
-# exit()
-    mlflow.log_param(k, v)
+
+config_dict = {k:v for k,v in config.items()}
+print(config_dict)
+run = mlflow.start_run()
+# for k,v in config_dict.items():
+#     # print(f'  {k}: {v}')
+#     # out_dir : {type: str, default: 'out-tss50'}
+#     # print(f"{k} : {{type : {str(type(v).__name__)}, default: {v}}} ")
+# # exit()
+#     mlflow.log_param(k, v)
 
 # exit(0)
 # various inits, derived attributes, I/O setup
@@ -358,7 +362,7 @@ with open(meta_path, 'rb') as f:
     decode = lambda l: ''.join([itos[i] for i in l])
 
 class PromoterGPT(mlflow.pyfunc.PythonModel):
-    def __init__(self, context):
+    def load_context(self, context):
         # self.predictor = predictor
         device = "cuda:0"
         ckpt_path = context.artifacts["gpt_model"]
@@ -396,5 +400,5 @@ mlflow.pyfunc.save_model(
 )
 
 loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
-test_predictions = loaded_model.predict("\n")
+test_predictions = loaded_model.predict(model_input="\n")
 print(test_predictions)
