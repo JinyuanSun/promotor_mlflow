@@ -400,5 +400,5 @@ mlflow.pyfunc.save_model(
 )
 
 loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
-test_predictions = loaded_model.predict(model_input="\n")
+test_predictions = loaded_model.predict("\n")
 print(test_predictions)
