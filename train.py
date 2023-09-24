@@ -380,12 +380,14 @@ class PromoterGPT(mlflow.pyfunc.PythonModel):
         with open(context.artifacts["meta"], 'rb') as f:
             meta = pickle.load(f)
             # TODO want to make this more general to arbitrary encoder/decoder schemes
-            _, itos = meta['stoi'], meta['itos']
-            # encode = lambda s: [stoi[c] for c in s]
+            stoi, itos = meta['stoi'], meta['itos']
+            self.encode = lambda s: [stoi[c] for c in s]
             self.decode = lambda l: ''.join([itos[i] for i in l])
 
     def predict(self, context, model_input):
-        y = self.model.generate(model_input, 50, temperature=0.8, top_k=4)
+        start_ids = encode(model_input)
+        x = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
+        y = self.model.generate(x, 50, temperature=0.8, top_k=4)
         return self.decode(y[0].tolist())
     
 
