@@ -15,25 +15,26 @@ entry_points:
       dataset : {type : str, default: 'tss50'} 
       gradient_accumulation_steps : {type : int, default: 1} 
       batch_size : {type : int, default: 8} 
-      block_size : {type : int, default: 256} 
+      block_size : {type : int, default: 64} 
       n_layer : {type : int, default: 3} 
       n_head : {type : int, default: 4} 
       n_embd : {type : int, default: 128} 
       dropout : {type : float, default: 0.2} 
       bias : {type : bool, default: False} 
       learning_rate : {type : float, default: 0.001} 
-      max_iters : {type : int, default: 5000} 
+      max_iters : {type : int, default: 50} 
       weight_decay : {type : float, default: 0.1} 
       beta1 : {type : float, default: 0.9} 
       beta2 : {type : float, default: 0.99} 
       grad_clip : {type : float, default: 1.0} 
       decay_lr : {type : bool, default: True} 
       warmup_iters : {type : int, default: 100} 
-      lr_decay_iters : {type : int, default: 5000} 
+      lr_decay_iters : {type : int, default: 50} 
       min_lr : {type : float, default: 0.0001} 
       backend : {type : str, default: 'nccl'} 
-      device : {type : str, default: 'cuda'} 
+      device : {type : str, default: 'cpu'} 
       dtype : {type : str, default: 'float32'} 
-      compile : {type : bool, default: False} 
-    command: "python train.py config/train_tss50.py --device={device} --n_layer={n_layer} --n_head={n_head} --n_embd={n_embd}"
+      compile : {type : bool, default: false} 
+    command: "python train.py config/train_tss50.py --device={device} \
+    --n_layer={n_layer} --n_head={n_head} --n_embd={n_embd} --dtype={dtype} --compile={compile} --lr_decay_iters={lr_decay_iters} --max_iters={max_iters}"
 

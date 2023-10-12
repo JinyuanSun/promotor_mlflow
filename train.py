@@ -72,9 +72,9 @@ min_lr = 6e-5 # minimum learning rate, should be ~= learning_rate/10 per Chinchi
 # DDP settings
 backend = 'nccl' # 'nccl', 'gloo', etc.
 # system
-device = 'cuda' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
-dtype = 'float16' # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
-compile = True # use PyTorch 2.0 to compile the model to be faster
+device = 'cpu' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
+dtype = 'float32' # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
+compile = False # use PyTorch 2.0 to compile the model to be faster
 # -----------------------------------------------------------------------------
 config_keys = [k for k,v in globals().items() if not k.startswith('_') and isinstance(v, (int, float, bool, str))]
 exec(open('configurator.py').read()) # overrides from command line or config file
@@ -362,45 +362,67 @@ with open(meta_path, 'rb') as f:
     decode = lambda l: ''.join([itos[i] for i in l])
 
 class PromoterGPT(mlflow.pyfunc.PythonModel):
-    def load_context(self, context):
-        # self.predictor = predictor
-        device = "cuda:0"
-        ckpt_path = context.artifacts["gpt_model"]
-        checkpoint = torch.load(ckpt_path, map_location=device)
-        gptconf = GPTConfig(**checkpoint['model_args'])
-        self.model = GPT(gptconf)
-        state_dict = checkpoint['model']
-        unwanted_prefix = '_orig_mod.'
-        for k,v in list(state_dict.items()):
-            if k.startswith(unwanted_prefix):
-                state_dict[k[len(unwanted_prefix):]] = state_dict.pop(k)
-        self.model.load_state_dict(state_dict)
-        self.model.to(device).eval()
+    # def load_context(self, context):
+    #     # self.predictor = predictor
+    #     device = "cuda:0"
+    #     ckpt_path = context.artifacts["gpt_model"]
+    #     checkpoint = torch.load(ckpt_path, map_location=device)
+    #     gptconf = GPTConfig(**checkpoint['model_args'])
+    #     self.model = GPT(gptconf)
+    #     state_dict = checkpoint['model']
+    #     unwanted_prefix = '_orig_mod.'
+    #     for k,v in list(state_dict.items()):
+    #         if k.startswith(unwanted_prefix):
+    #             state_dict[k[len(unwanted_prefix):]] = state_dict.pop(k)
+    #     self.model.load_state_dict(state_dict)
+    #     self.model.to(device).eval()
 
-        with open(context.artifacts["meta"], 'rb') as f:
-            meta = pickle.load(f)
-            # TODO want to make this more general to arbitrary encoder/decoder schemes
-            stoi, itos = meta['stoi'], meta['itos']
-            self.encode = lambda s: [stoi[c] for c in s]
-            self.decode = lambda l: ''.join([itos[i] for i in l])
+    #     with open(context.artifacts["meta"], 'rb') as f:
+    #         meta = pickle.load(f)
+    #         # TODO want to make this more general to arbitrary encoder/decoder schemes
+    #         stoi, itos = meta['stoi'], meta['itos']
+    #         self.encode = lambda s: [stoi[c] for c in s]
+    #         self.decode = lambda l: ''.join([itos[i] for i in l])
+    def __init__(self, predictor):
+        self.predictor = predictor
 
-    def predict(self, context, model_input):
-        start_ids = encode(model_input)
+    def encode(self, x):
+        vocab = {"A": 0,"C":1,"G":2,"T":3,"\n":4}
+        return [vocab[i] for i in x]
+    
+    def decode(self, y):
+        vocab = "ACGT\n"
+        return "".join([vocab[i] for i in y])
+
+    def predict(self, model_input):
+        start_ids = self.encode(model_input)
         x = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
-        y = self.model.generate(x, 50, temperature=0.8, top_k=4)
+        y = self.predictor.generate(x, 50, temperature=0.8, top_k=4)
         return self.decode(y[0].tolist())
     
 
-artifacts = {"gpt_model": os.path.join(out_dir, 'ckpt.pt'),
-             "meta": meta_path}
+# artifacts = {"gpt_model": os.path.join(out_dir, 'ckpt.pt'),
+#              "meta": meta_path}
 
-mlflow_pyfunc_model_path = "model"
-mlflow.pyfunc.save_model(
-    path=mlflow_pyfunc_model_path,
-    python_model=PromoterGPT(),
-    artifacts=artifacts
+# mlflow_pyfunc_model_path = "model"
+# mlflow.pyfunc.save_model(
+#     path=mlflow_pyfunc_model_path,
+#     python_model=PromoterGPT(),
+#     artifacts=artifacts
+# )
+
+loaded_model = PromoterGPT(model)
+
+
+model_info = mlflow.pyfunc.log_model(
+    artifact_path="model",
+    python_model=loaded_model,
+    registered_model_name="model"
 )
 
-loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
-test_predictions = loaded_model.predict("\n")
+model = mlflow.pyfunc.load_model(model_uri=model_info.model_uri).unwrap_python_model()
+
+# loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
+test_predictions = model.predict("\n")
+print("++++++++++RESULTS++++++++++")
 print(test_predictions)
