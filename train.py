@@ -27,7 +27,7 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
-from model import GPTConfig, GPT
+from gpt_model import GPTConfig, GPT
 import mlflow
 
 # -----------------------------------------------------------------------------
@@ -58,7 +58,7 @@ n_embd = 768
 dropout = 0.0 # for pretraining 0 is good, for finetuning try 0.1+
 bias = False # do we use bias inside LayerNorm and Linear layers?
 # adamw optimizer
-learning_rate = 6e-4 # max learning rate
+learning_rate = 1e-3 # max learning rate
 max_iters = 600000 # total number of training iterations
 weight_decay = 1e-1
 beta1 = 0.9
@@ -72,7 +72,7 @@ min_lr = 6e-5 # minimum learning rate, should be ~= learning_rate/10 per Chinchi
 # DDP settings
 backend = 'nccl' # 'nccl', 'gloo', etc.
 # system
-device = 'cpu' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
+device = 'cuda' # examples: 'cpu', 'cuda', 'cuda:0', 'cuda:1' etc., or try 'mps' on macbooks
 dtype = 'float32' # 'float32', 'bfloat16', or 'float16', the latter will auto implement a GradScaler
 compile = False # use PyTorch 2.0 to compile the model to be faster
 # -----------------------------------------------------------------------------
@@ -362,36 +362,15 @@ with open(meta_path, 'rb') as f:
     decode = lambda l: ''.join([itos[i] for i in l])
 
 class PromoterGPT(mlflow.pyfunc.PythonModel):
-    # def load_context(self, context):
-    #     # self.predictor = predictor
-    #     device = "cuda:0"
-    #     ckpt_path = context.artifacts["gpt_model"]
-    #     checkpoint = torch.load(ckpt_path, map_location=device)
-    #     gptconf = GPTConfig(**checkpoint['model_args'])
-    #     self.model = GPT(gptconf)
-    #     state_dict = checkpoint['model']
-    #     unwanted_prefix = '_orig_mod.'
-    #     for k,v in list(state_dict.items()):
-    #         if k.startswith(unwanted_prefix):
-    #             state_dict[k[len(unwanted_prefix):]] = state_dict.pop(k)
-    #     self.model.load_state_dict(state_dict)
-    #     self.model.to(device).eval()
-
-    #     with open(context.artifacts["meta"], 'rb') as f:
-    #         meta = pickle.load(f)
-    #         # TODO want to make this more general to arbitrary encoder/decoder schemes
-    #         stoi, itos = meta['stoi'], meta['itos']
-    #         self.encode = lambda s: [stoi[c] for c in s]
-    #         self.decode = lambda l: ''.join([itos[i] for i in l])
     def __init__(self, predictor):
         self.predictor = predictor
 
     def encode(self, x):
-        vocab = {"A": 0,"C":1,"G":2,"T":3,"\n":4}
+        vocab = {"\n": 0,"A":1,"C":2,"G":3,"T":4}
         return [vocab[i] for i in x]
     
     def decode(self, y):
-        vocab = "ACGT\n"
+        vocab = "\nACGT"
         return "".join([vocab[i] for i in y])
 
     def predict(self, model_input):
@@ -401,18 +380,10 @@ class PromoterGPT(mlflow.pyfunc.PythonModel):
         return self.decode(y[0].tolist())
     
 
-# artifacts = {"gpt_model": os.path.join(out_dir, 'ckpt.pt'),
-#              "meta": meta_path}
-
-# mlflow_pyfunc_model_path = "model"
-# mlflow.pyfunc.save_model(
-#     path=mlflow_pyfunc_model_path,
-#     python_model=PromoterGPT(),
-#     artifacts=artifacts
-# )
-
 loaded_model = PromoterGPT(model)
-
+test_predictions = loaded_model.predict("\n")
+print("++++++++++RESULTS++++++++++")
+print(test_predictions)
 
 model_info = mlflow.pyfunc.log_model(
     artifact_path="model",
