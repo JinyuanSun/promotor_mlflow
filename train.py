@@ -740,6 +740,6 @@ model_info = mlflow.pyfunc.log_model(
 model = mlflow.pyfunc.load_model(model_uri=model_info.model_uri).unwrap_python_model()
 
 # loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
-test_predictions = model.predict(df)
-print("++++++++++RESULTS++++++++++")
-print(test_predictions)
+# test_predictions = model.predict(df)
+# print("++++++++++RESULTS++++++++++")
+# print(test_predictions)
