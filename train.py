@@ -727,9 +727,9 @@ class PromoterGPT(mlflow.pyfunc.PythonModel):
 
 loaded_model = PromoterGPT(model)
 df = pd.DataFrame([{"seq_prompt": "\n"}, {"seq_prompt": "AT"}])
-test_predictions = loaded_model.predict(df)
-print("++++++++++RESULTS++++++++++")
-print(test_predictions)
+# test_predictions = loaded_model.predict(df)
+# print("++++++++++RESULTS++++++++++")
+# print(test_predictions)
 
 model_info = mlflow.pyfunc.log_model(
     artifact_path="model",
