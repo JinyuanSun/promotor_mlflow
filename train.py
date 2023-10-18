@@ -27,6 +27,8 @@ import torch
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.distributed import init_process_group, destroy_process_group
 
+
+import pandas as pd
 """
 Full definition of a GPT Language Model, all of it in this single file.
 References:
@@ -701,15 +703,31 @@ class PromoterGPT(mlflow.pyfunc.PythonModel):
         vocab = "\nACGT"
         return "".join([vocab[i] for i in y])
 
-    def predict(self, model_input):
-        start_ids = self.encode(model_input)
-        x = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
-        y = self.predictor.generate(x, 50, temperature=0.8, top_k=4)
-        return self.decode(y[0].tolist())
+    def predict(self, context, model_input):
+        """
+        model_input: should be a pandas dataframe
+        index | seq_prompt |
+        seq_0 | AT         |
+        seq_1 | \n         |
+
+        return: 
+        index | seq_prompt | promoter |
+        seq_0 | AT         | ATCTATAAT|
+        seq_1 | \n         | \nTATACTG|
+        """
+        promoter = []
+        for prompt in model_input["seq_prompt"].values:
+            start_ids = self.encode(prompt)
+            x = (torch.tensor(start_ids, dtype=torch.long, device=device)[None, ...])
+            y = self.predictor.generate(x, 50, temperature=0.8, top_k=4)
+            promoter.append(self.decode(y[0].tolist()))
+        model_input['promoter'] = promoter
+        return model_input
     
 
 loaded_model = PromoterGPT(model)
-test_predictions = loaded_model.predict("\n")
+df = pd.DataFrame([{"seq_prompt": "\n"}, {"seq_prompt": "AT"}])
+test_predictions = loaded_model.predict(df)
 print("++++++++++RESULTS++++++++++")
 print(test_predictions)
 
@@ -722,6 +740,6 @@ model_info = mlflow.pyfunc.log_model(
 model = mlflow.pyfunc.load_model(model_uri=model_info.model_uri).unwrap_python_model()
 
 # loaded_model = mlflow.pyfunc.load_model(mlflow_pyfunc_model_path)
-test_predictions = model.predict("\n")
+test_predictions = model.predict(df)
 print("++++++++++RESULTS++++++++++")
 print(test_predictions)
