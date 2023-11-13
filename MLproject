@@ -36,4 +36,4 @@ entry_points:
       dtype : {type : str, default: 'float32'} 
       compile : {type : bool, default: false} 
       dataset_name : {type : str, default: ecoli}
-    command: "unzip ../{dataset_name}.zip && cp ../{dataset_name}/input.txt data/tss50/ && python data/tss50/prepare.py && python train.py config/train_tss50.py --dataset={dataset} --device={device} --learning_rate={learning_rate} --n_layer={n_layer} --n_head={n_head} --n_embd={n_embd} --dtype={dtype} --compile={compile} --lr_decay_iters={lr_decay_iters} --max_iters={max_iters}"
+    command: "cp ../{dataset_name}/input.txt data/tss50/ && python data/tss50/prepare.py && python train.py config/train_tss50.py --dataset={dataset} --device={device} --learning_rate={learning_rate} --n_layer={n_layer} --n_head={n_head} --n_embd={n_embd} --dtype={dtype} --compile={compile} --lr_decay_iters={lr_decay_iters} --max_iters={max_iters}"
