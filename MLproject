@@ -35,4 +35,4 @@ entry_points:
       device : {type : str, default: 'cuda'} 
       dtype : {type : str, default: 'float32'} 
       compile : {type : bool, default: false} 
-    command: "ls ../ "
+    command: "cp ../ecoli.zip/input.txt data/tss50/ && python data/tss50/prepare.py && python train.py config/train_tss50.py --dataset={dataset} --device={device} --learning_rate={learning_rate} --n_layer={n_layer} --n_head={n_head} --n_embd={n_embd} --dtype={dtype} --compile={compile} --lr_decay_iters={lr_decay_iters} --max_iters={max_iters}"
